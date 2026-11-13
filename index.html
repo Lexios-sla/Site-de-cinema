@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<!-- Declara que o documento usa HTML5 (evita o "modo quirks" do navegador) -->
+<html lang="pt-BR">
+<!-- lang ajuda leitores de tela a pronunciar corretamente e o navegador a traduzir -->
+<head>
+  <meta charset="UTF-8">
+  <!-- UTF-8: garante acentos e emojis corretos -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Faz o layout se adaptar à largura do celular (design responsivo) -->
+  <meta name="description" content="CineVida – consulte filmes, escolha assentos e compre ingressos e combos online.">
+  <title>CineVida – Ingressos e Combos</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Link de atalho para quem navega por teclado: pula o menu e vai direto ao conteúdo -->
+  <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+  <!-- ===================== CABEÇALHO ===================== -->
+  <header class="topo">
+    <a class="logo" href="#/home" aria-label="CineVida – página inicial">🎬 CineVida</a>
+    <!-- O menu é montado pelo JavaScript conforme o perfil de quem está logado -->
+    <nav id="menu" aria-label="Menu principal"></nav>
+    <div class="ferramentas">
+      <!-- Classe PaginaInicial.acessibilidade(): tamanho do texto e alto contraste -->
+      <div class="acess" role="group" aria-label="Acessibilidade">
+        <button type="button" id="btn-menos" aria-label="Diminuir tamanho do texto">A−</button>
+        <button type="button" id="btn-mais" aria-label="Aumentar tamanho do texto">A+</button>
+        <button type="button" id="btn-contraste" aria-pressed="false">Contraste</button>
+      </div>
+      <div id="conta" class="conta"></div>
+    </div>
+  </header>
+
+  <!-- tabindex="-1" permite focar o <main> por script ao trocar de página -->
+  <main id="conteudo" tabindex="-1">
+
+    <!-- ===================== INÍCIO (PaginaInicial) ===================== -->
+    <section class="view" id="view-home" data-rota="home" hidden>
+      <h1>Em cartaz</h1>
+      <div id="lista-filmes" class="grade"></div>
+
+      <h2>Sessões</h2>
+      <div id="lista-sessoes"></div>
+
+      <h2>Combos</h2>
+      <div id="lista-combos" class="grade"></div>
+    </section>
+
+    <!-- ===================== LOGIN / CADASTRO ===================== -->
+    <section class="view" id="view-login" data-rota="login" hidden>
+      <h1>Entrar</h1>
+      <div class="duas-colunas">
+        <form id="form-login" class="cartao">
+          <h2>Já tenho conta</h2>
+          <label for="login-email">E-mail</label>
+          <input id="login-email" type="email" autocomplete="username" required>
+          <label for="login-senha">Senha</label>
+          <input id="login-senha" type="password" autocomplete="current-password" required>
+          <button class="btn" type="submit">Entrar</button>
+          <p class="dica">Contas de teste: <code>cliente@cine.com</code>, <code>atendente@cine.com</code>,
+            <code>suporte@cine.com</code> e <code>gerente@cine.com</code> — senha <code>123456</code>.</p>
+        </form>
+
+        <form id="form-cadastro" class="cartao">
+          <h2>Criar conta de cliente</h2>
+          <label for="cad-nome">Nome completo</label>
+          <input id="cad-nome" type="text" autocomplete="name" minlength="3" maxlength="80" required>
+          <label for="cad-cpf">CPF</label>
+          <input id="cad-cpf" type="text" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" required>
+          <label for="cad-tel">Telefone</label>
+          <input id="cad-tel" type="tel" autocomplete="tel" placeholder="(91) 99999-9999" maxlength="15" required>
+          <label for="cad-email">E-mail</label>
+          <input id="cad-email" type="email" autocomplete="email" required>
+          <label for="cad-senha">Senha (mín. 6 caracteres)</label>
+          <input id="cad-senha" type="password" autocomplete="new-password" minlength="6" required>
+          <button class="btn" type="submit">Cadastrar</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===================== COMPRA (Cliente + ConfirmarPagamento) ===================== -->
+    <section class="view" id="view-compra" data-rota="compra" hidden>
+      <h1>Comprar ingressos e combos</h1>
+
+      <div class="cartao">
+        <h2>1. Escolha a sessão</h2>
+        <label for="sel-sessao">Sessão</label>
+        <select id="sel-sessao"></select>
+
+        <h2>2. Escolha os assentos</h2>
+        <p class="dica">Ingresso: <strong id="txt-preco-ingresso"></strong> por assento (máximo de 8).</p>
+        <div class="tela" aria-hidden="true">TELA</div>
+        <div id="assentos" class="assentos"></div>
+        <p class="legenda" aria-hidden="true">
+          <span class="amostra livre"></span> Livre
+          <span class="amostra marcado"></span> Selecionado
+          <span class="amostra ocupado"></span> Ocupado
+        </p>
+      </div>
+
+      <div class="cartao">
+        <h2>3. Combos (opcional)</h2>
+        <div id="combos-compra" class="lista-combos"></div>
+      </div>
+
+      <div class="cartao">
+        <h2>4. Pagamento</h2>
+        <div id="resumo" class="resumo" aria-live="polite"></div>
+        <label for="metodo">Forma de pagamento</label>
+        <select id="metodo">
+          <option value="pix">Pix</option>
+          <option value="cartao">Cartão</option>
+          <option value="dinheiro">Dinheiro (pagar na bilheteria)</option>
+        </select>
+        <div class="acoes">
+          <button class="btn secundario" type="button" id="btn-revisar">Revisar pagamento</button>
+          <button class="btn" type="button" id="btn-confirmar" hidden>Confirmar pagamento</button>
+        </div>
+        <div id="checklist" aria-live="polite"></div>
+        <div id="recibo" aria-live="polite"></div>
+      </div>
+
+      <h2>Meus pedidos</h2>
+      <div id="meus-pedidos"></div>
+    </section>
+
+    <!-- ===================== SUPORTE E FEEDBACK ===================== -->
+    <section class="view" id="view-suporte" data-rota="suporte" hidden>
+      <h1>Suporte</h1>
+      <div id="bloco-cliente" class="duas-colunas" hidden>
+        <form id="form-suporte" class="cartao">
+          <h2>Solicitar suporte</h2>
+          <label for="sup-assunto">Assunto</label>
+          <input id="sup-assunto" type="text" maxlength="80" required>
+          <label for="sup-msg">Mensagem</label>
+          <textarea id="sup-msg" rows="4" maxlength="500" required></textarea>
+          <button class="btn" type="submit">Enviar solicitação</button>
+        </form>
+
+        <form id="form-feedback" class="cartao">
+          <h2>Avaliar um filme</h2>
+          <label for="fb-filme">Filme</label>
+          <select id="fb-filme" required></select>
+          <label for="fb-nota">Nota (0 a 10)</label>
+          <input id="fb-nota" type="number" min="0" max="10" step="0.5" required>
+          <label for="fb-comentario">Comentário (opcional)</label>
+          <textarea id="fb-comentario" rows="3" maxlength="300"></textarea>
+          <button class="btn" type="submit">Enviar feedback</button>
+        </form>
+      </div>
+      <h2 id="titulo-solicitacoes">Solicitações</h2>
+      <div id="lista-solicitacoes"></div>
+    </section>
+
+    <!-- ===================== BALCÃO (Funcionario) ===================== -->
+    <section class="view" id="view-balcao" data-rota="balcao" hidden>
+      <h1>Balcão de validação</h1>
+      <form id="form-ingresso" class="cartao">
+        <h2>Validar ingresso</h2>
+        <label for="cod-ingresso">Código do ingresso</label>
+        <input id="cod-ingresso" type="text" maxlength="12" autocomplete="off" required>
+        <button class="btn" type="submit">Validar ingresso</button>
+        <div id="resultado-ingresso" aria-live="polite"></div>
+      </form>
+      <h2>Pagamentos aguardando validação</h2>
+      <div id="lista-pagamentos"></div>
+    </section>
+
+    <!-- ===================== GERÊNCIA (Gerente) ===================== -->
+    <section class="view" id="view-gerencia" data-rota="gerencia" hidden>
+      <h1>Gerência</h1>
+
+      <div class="duas-colunas">
+        <form id="form-filme" class="cartao">
+          <h2 id="titulo-form-filme">Cadastrar filme</h2>
+          <input id="filme-id" type="hidden">
+          <label for="filme-titulo">Título</label>
+          <input id="filme-titulo" type="text" maxlength="80" required>
+          <label for="filme-genero">Gênero</label>
+          <input id="filme-genero" type="text" maxlength="40" required>
+          <label for="filme-duracao">Duração (minutos)</label>
+          <input id="filme-duracao" type="number" min="1" max="600" required>
+          <div class="acoes">
+            <button class="btn" type="submit">Salvar filme</button>
+            <button class="btn secundario" type="reset" id="cancelar-filme">Limpar</button>
+          </div>
+        </form>
+
+        <form id="form-sessao" class="cartao">
+          <h2 id="titulo-form-sessao">Cadastrar / atualizar sessão</h2>
+          <input id="sessao-id" type="hidden">
+          <label for="sessao-filme">Filme</label>
+          <select id="sessao-filme" required></select>
+          <label for="sessao-data">Data</label>
+          <input id="sessao-data" type="date" required>
+          <label for="sessao-horario">Horário</label>
+          <input id="sessao-horario" type="time" required>
+          <label for="sessao-sala">Sala (1 a 9)</label>
+          <input id="sessao-sala" type="number" min="1" max="9" required>
+          <div class="acoes">
+            <button class="btn" type="submit">Salvar sessão</button>
+            <button class="btn secundario" type="reset" id="cancelar-sessao">Limpar</button>
+          </div>
+        </form>
+      </div>
+
+      <h2>Filmes</h2>
+      <div id="gerencia-filmes"></div>
+      <h2>Sessões</h2>
+      <div id="gerencia-sessoes"></div>
+
+      <h2>Produtos (combos)</h2>
+      <form id="form-produto" class="cartao linha">
+        <div>
+          <label for="prod-nome">Nome</label>
+          <input id="prod-nome" type="text" maxlength="60" required>
+        </div>
+        <div>
+          <label for="prod-preco">Preço (R$)</label>
+          <input id="prod-preco" type="number" min="0.01" step="0.01" required>
+        </div>
+        <div>
+          <label for="prod-estoque">Estoque</label>
+          <input id="prod-estoque" type="number" min="0" step="1" required>
+        </div>
+        <button class="btn" type="submit">Cadastrar produto</button>
+      </form>
+      <div id="gerencia-produtos"></div>
+
+      <h2>Permissões dos funcionários</h2>
+      <div id="gerencia-permissoes"></div>
+
+      <h2>Feedbacks recebidos</h2>
+      <div id="gerencia-feedbacks"></div>
+    </section>
+  </main>
+
+  <!-- Região de avisos: role="status" faz leitores de tela anunciarem as mensagens -->
+  <div id="aviso" class="aviso" role="status" aria-live="polite"></div>
+
+  <footer class="rodape">
+    <p>CineVida © 2026 — projeto didático. Os dados ficam apenas no seu navegador (localStorage).</p>
+  </footer>
+
+  <!-- O script fica no fim do body para o HTML já existir quando o JS rodar -->
+  <script src="script.js"></script>
+</body>
+</html>
