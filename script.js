@@ -41,18 +41,27 @@ function gerarCodigo() {
   return [...bytes].map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
-// Valida CPF pelos dois dígitos verificadores
-function cpfValido(cpf) {
-  const n = cpf.replace(/\D/g, '');                       // só dígitos
-  if (n.length !== 11 || /^(\d)\1{10}$/.test(n)) return false; // rejeita 111.111.111-11 etc.
-  const digito = t => {
-    let soma = 0;
-    for (let i = 0; i < t; i++) soma += Number(n[i]) * (t + 1 - i);
-    const r = (soma * 10) % 11;
-    return r === 10 ? 0 : r;
-  };
-  return digito(9) === Number(n[9]) && digito(10) === Number(n[10]);
+// Máscara de CPF: vai pontuando enquanto a pessoa digita -> "123.456.789-60"
+function formatarCpf(valor) {
+  const d = valor.replace(/\D/g, '').slice(0, 11);               // só dígitos, no máximo 11
+  return d
+    .replace(/^(\d{3})(\d)/, '$1.$2')                            // 123.4
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')               // 123.456.7
+    .replace(/\.(\d{3})(\d)/, '.$1-$2');                        // 123.456.789-6
 }
+
+// Máscara de telefone: "(91) 99151-7602" (11 dígitos) ou "(91) 9915-7602" (10 dígitos)
+function formatarTelefone(valor) {
+  const d = valor.replace(/\D/g, '').slice(0, 11);
+  if (d.length === 0) return '';
+  if (d.length <= 2) return `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+// "suporte" -> "Suporte" (é o que aparece no cabeçalho)
+const rotuloPerfil = u => u.perfil.charAt(0).toUpperCase() + u.perfil.slice(1);
 
 /* Cria elementos DOM de forma SEGURA.
    Textos entram via append() (viram texto puro, nunca HTML), o que impede
@@ -424,10 +433,10 @@ function dadosIniciais() {
     // ATENÇÃO: senhas em texto puro só servem para esta demonstração.
     // Num sistema real a autenticação fica no servidor, com hash (bcrypt/argon2).
     usuarios: [
-      { nome: 'Ana Cliente', cpf: '52998224725', telefone: '91999990001', email: 'cliente@cine.com', senha: '123456', perfil: 'cliente' },
-      { nome: 'Bruno Atendente', cpf: '11144477735', telefone: '91999990002', email: 'atendente@cine.com', senha: '123456', perfil: 'atendente', permissoes: ['validar', 'suporte'] },
-      { nome: 'Carla Suporte', cpf: '12345678909', telefone: '91999990003', email: 'suporte@cine.com', senha: '123456', perfil: 'suporte', permissoes: ['suporte'] },
-      { nome: 'Daniel Gerente', cpf: '93541134780', telefone: '91999990004', email: 'gerente@cine.com', senha: '123456', perfil: 'gerente' }
+      { nome: 'Cliente', cpf: '52998224725', telefone: '91999990001', email: 'cliente@cine.com', senha: '123456', perfil: 'cliente' },
+      { nome: 'Atendente', cpf: '11144477735', telefone: '91999990002', email: 'atendente@cine.com', senha: '123456', perfil: 'atendente', permissoes: ['validar', 'suporte'] },
+      { nome: 'Suporte', cpf: '12345678909', telefone: '91999990003', email: 'suporte@cine.com', senha: '123456', perfil: 'suporte', permissoes: ['suporte'] },
+      { nome: 'Gerente', cpf: '93541134780', telefone: '91999990004', email: 'gerente@cine.com', senha: '123456', perfil: 'gerente' }
     ],
     pedidos: [], solicitacoes: [], feedbacks: [], proximoId: 100
   };
@@ -438,6 +447,11 @@ class Cinema {
     let dados = null;
     try { dados = JSON.parse(localStorage.getItem(CHAVE_DB)); } catch { /* dados corrompidos: recomeça */ }
     dados = dados ?? dadosIniciais();
+    // Migração: dados salvos antes usavam nomes fictícios; troca pelo nome do perfil
+    const ANTIGOS = { 'Ana Cliente': 'Cliente', 'Bruno Atendente': 'Atendente', 'Carla Suporte': 'Suporte', 'Daniel Gerente': 'Gerente' };
+    const novoNome = n => ANTIGOS[n] ?? n;
+    dados.usuarios.forEach(u => { u.nome = novoNome(u.nome); });
+    dados.solicitacoes.forEach(s => { s.nome = novoNome(s.nome); if (s.atendidoPor) s.atendidoPor = novoNome(s.atendidoPor); });
     this.filmes = dados.filmes.map(o => new Filme(o));
     this.sessoes = dados.sessoes.map(o => new Sessao(o));
     this.produtos = dados.produtos.map(o => new Produto(o));
@@ -495,7 +509,7 @@ function mostrarRota(focar = true) {
   renderMenu(rota);
   renderConta();
   RENDERIZADORES[rota]();
-  document.title = `${ROTULOS[rota]} – CineVida`;
+  document.title = `${ROTULOS[rota]} – VSDE-Cine`;
   if (focar) $('#conteudo').focus({ preventScroll: true });
 }
 
@@ -509,7 +523,7 @@ function renderConta() {
   const caixa = $('#conta');
   if (!usuario) { caixa.replaceChildren(); return; }
   caixa.replaceChildren(
-    el('span', {}, `Olá, ${usuario.nome.split(' ')[0]} (${usuario.perfil})`),
+    el('span', {}, `Logado como: ${rotuloPerfil(usuario)}`),
     el('button', { type: 'button', onclick: sair }, 'Sair'));
 }
 
@@ -612,7 +626,11 @@ function renderCompra() {
 function renderAssentos() {
   const caixa = $('#assentos');
   if (!carrinho.sessaoId) { caixa.replaceChildren(el('p', { class: 'vazio' }, 'Escolha uma sessão para ver os assentos.')); return; }
-  caixa.replaceChildren(...usuario.consultarAssentos(carrinho.sessaoId).map(a => {
+  // A TELA fica embaixo, então a fileira A (a mais perto da tela) vai por último
+  const todos = usuario.consultarAssentos(carrinho.sessaoId);
+  const fileiras = [];
+  for (let i = 0; i < todos.length; i += POR_FILEIRA) fileiras.unshift(todos.slice(i, i + POR_FILEIRA));
+  caixa.replaceChildren(...fileiras.flat().map(a => {
     const marcado = carrinho.assentos.includes(a.id);
     return el('button', {
       type: 'button', class: 'assento', 'aria-pressed': String(marcado),
@@ -817,7 +835,7 @@ function ligarEventos() {
   aoEnviar('#form-login', form => {
     usuario = Login.autenticar($('#login-email').value, $('#login-senha').value);
     form.reset();
-    avisar(`Bem-vindo(a), ${usuario.nome}!`);
+    avisar(`Você entrou como ${rotuloPerfil(usuario)}.`);
     location.hash = '#/home';
     mostrarRota(false);
   });
@@ -829,14 +847,30 @@ function ligarEventos() {
       telefone: $('#cad-tel').value.replace(/\D/g, ''), email: $('#cad-email').value.trim().toLowerCase(),
       senha: $('#cad-senha').value, perfil: 'cliente'
     };
-    if (!cpfValido(dados.cpf)) throw new Error('CPF inválido.');
+    if (dados.cpf.length !== 11) throw new Error('CPF incompleto: digite os 11 números.');
     if (dados.telefone.length < 10 || dados.telefone.length > 11) throw new Error('Telefone inválido (use DDD + número).');
     if (cinema.usuarios.some(u => u.email === dados.email)) throw new Error('Este e-mail já está cadastrado.');
     if (cinema.usuarios.some(u => u.cpf === dados.cpf)) throw new Error('Este CPF já está cadastrado.');
     cinema.usuarios.push(new Cliente(dados));
     cinema.salvar();
     form.reset();
-    avisar('Conta criada! Agora é só entrar.');
+    // Deixa o login pronto: e-mail já preenchido e cursor na senha
+    $('#login-email').value = dados.email;
+    $('#login-senha').value = '';
+    $('#login-senha').focus();
+    avisar('Conta criada! Agora é só digitar sua senha e entrar.');
+  });
+
+  // Máscaras: formatam CPF e telefone enquanto a pessoa digita
+  $('#cad-cpf').addEventListener('input', e => { e.target.value = formatarCpf(e.target.value); });
+  $('#cad-tel').addEventListener('input', e => { e.target.value = formatarTelefone(e.target.value); });
+
+  // Nota: só números, no máximo 2 dígitos e nunca acima de 10
+  $('#fb-nota').addEventListener('input', e => {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 2);
+    if (v !== '' && Number(v) > 10) v = '10';
+    else if (v.length === 2 && v[0] === '0') v = v[1];           // "07" vira "7"
+    e.target.value = v;
   });
 
   // Compra
