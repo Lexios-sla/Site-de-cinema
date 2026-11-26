@@ -53,9 +53,9 @@
         <form id="form-login" class="cartao">
           <h2>Já tenho conta</h2>
           <label for="login-email">E-mail</label>
-          <input id="login-email" type="email" autocomplete="username" required>
+          <input id="login-email" type="email" autocomplete="username" maxlength="80" required>
           <label for="login-senha">Senha</label>
-          <input id="login-senha" type="password" autocomplete="current-password" required>
+          <input id="login-senha" type="password" autocomplete="current-password" maxlength="64" required>
           <button class="btn" type="submit">Entrar</button>
           <p class="dica">Contas de teste: <code>cliente@cine.com</code>, <code>atendente@cine.com</code>,
             <code>suporte@cine.com</code> e <code>gerente@cine.com</code> — senha <code>123456</code>.</p>
@@ -70,9 +70,9 @@
           <label for="cad-tel">Telefone</label>
           <input id="cad-tel" type="tel" autocomplete="tel" placeholder="(91) 99999-9999" maxlength="15" required>
           <label for="cad-email">E-mail</label>
-          <input id="cad-email" type="email" autocomplete="email" required>
+          <input id="cad-email" type="email" autocomplete="email" maxlength="80" required>
           <label for="cad-senha">Senha (mín. 6 caracteres)</label>
-          <input id="cad-senha" type="password" autocomplete="new-password" minlength="6" required>
+          <input id="cad-senha" type="password" autocomplete="new-password" minlength="6" maxlength="64" required>
           <button class="btn" type="submit">Cadastrar</button>
         </form>
       </div>
@@ -115,6 +115,7 @@
         <div class="acoes">
           <button class="btn secundario" type="button" id="btn-revisar">Revisar pagamento</button>
           <button class="btn" type="button" id="btn-confirmar" hidden>Confirmar pagamento</button>
+          <button class="btn perigo" type="button" id="btn-cancelar" hidden>Cancelar compra</button>
         </div>
         <div id="checklist" aria-live="polite"></div>
         <div id="recibo" aria-live="polite"></div>
@@ -131,9 +132,9 @@
         <form id="form-suporte" class="cartao">
           <h2>Solicitar suporte</h2>
           <label for="sup-assunto">Assunto</label>
-          <input id="sup-assunto" type="text" maxlength="80" required>
+          <input id="sup-assunto" type="text" minlength="3" maxlength="80" required>
           <label for="sup-msg">Mensagem</label>
-          <textarea id="sup-msg" rows="4" maxlength="500" required></textarea>
+          <textarea id="sup-msg" rows="4" minlength="5" maxlength="500" required></textarea>
           <button class="btn" type="submit">Enviar solicitação</button>
         </form>
 
@@ -150,6 +151,10 @@
       </div>
       <h2 id="titulo-solicitacoes">Solicitações</h2>
       <div id="lista-solicitacoes"></div>
+      <div id="bloco-pedidos" hidden>
+        <h2>Pedidos dos clientes</h2>
+        <div id="lista-pedidos"></div>
+      </div>
     </section>
 
     <!-- ===================== BALCÃO (Funcionario) ===================== -->
@@ -175,9 +180,9 @@
           <h2 id="titulo-form-filme">Cadastrar filme</h2>
           <input id="filme-id" type="hidden">
           <label for="filme-titulo">Título</label>
-          <input id="filme-titulo" type="text" maxlength="80" required>
+          <input id="filme-titulo" type="text" minlength="2" maxlength="80" required>
           <label for="filme-genero">Gênero</label>
-          <input id="filme-genero" type="text" maxlength="40" required>
+          <input id="filme-genero" type="text" minlength="2" maxlength="40" required>
           <label for="filme-duracao">Duração (minutos)</label>
           <input id="filme-duracao" type="number" min="1" max="600" required>
           <div class="acoes">
@@ -213,15 +218,15 @@
       <form id="form-produto" class="cartao linha">
         <div>
           <label for="prod-nome">Nome</label>
-          <input id="prod-nome" type="text" maxlength="60" required>
+          <input id="prod-nome" type="text" minlength="2" maxlength="60" required>
         </div>
         <div>
           <label for="prod-preco">Preço (R$)</label>
-          <input id="prod-preco" type="number" min="0.01" step="0.01" required>
+          <input id="prod-preco" type="number" min="0.01" max="9999.99" step="0.01" required>
         </div>
         <div>
           <label for="prod-estoque">Estoque</label>
-          <input id="prod-estoque" type="number" min="0" step="1" required>
+          <input id="prod-estoque" type="number" min="0" max="100000" step="1" required>
         </div>
         <button class="btn" type="submit">Cadastrar produto</button>
       </form>
@@ -229,6 +234,9 @@
 
       <h2>Permissões dos funcionários</h2>
       <div id="gerencia-permissoes"></div>
+
+      <h2>Pedidos</h2>
+      <div id="gerencia-pedidos"></div>
 
       <h2>Feedbacks recebidos</h2>
       <div id="gerencia-feedbacks"></div>
